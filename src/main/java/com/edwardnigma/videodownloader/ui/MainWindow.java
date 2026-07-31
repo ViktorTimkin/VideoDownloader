@@ -6,7 +6,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
-
+import com.edwardnigma.videodownloader.service.DownloaderService;
 import java.io.File;
 
 public class MainWindow {
@@ -22,6 +22,8 @@ public class MainWindow {
     private final TextField savePathField;
     private final Button chooseFolderButton;
     private final Button downloadButton;
+
+    private final DownloaderService downloaderService =  new DownloaderService();
 
 
     private QualityVideo qualityVideo =  QualityVideo.P480;
@@ -93,6 +95,7 @@ public class MainWindow {
     private void initialize() {
         initializeChooseFolderButton();
         initializeQualityButtons();
+        initializeDownloadButton();
     }
     private void initializeQualityButtons() {
         quality480Button.setOnAction(event -> qualityVideo = QualityVideo.P480);
@@ -108,5 +111,12 @@ public class MainWindow {
                 savePathField.setText(selectedDirectory.getAbsolutePath());
             }
         });
+    }
+    private void initializeDownloadButton(){
+        downloadButton.setOnAction(event -> {downloaderService.download(
+                getUrl(),
+                getSavePath(),
+                getQualityVideo()
+        );});
     }
 }

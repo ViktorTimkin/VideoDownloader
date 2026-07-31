@@ -16,7 +16,7 @@ public class VideoDownloaderApplication extends Application {
 
         MainWindow window = new MainWindow();
 
-        Scene scene = new Scene(window.getRoot(), 900, 600);
+        Scene scene = new Scene(window.getRoot(), 900, 250);
 
         stage.setScene(scene);
         stage.setTitle("Video Downloader");
