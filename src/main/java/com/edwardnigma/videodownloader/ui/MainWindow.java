@@ -1,4 +1,6 @@
 package com.edwardnigma.videodownloader.ui;
+
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
@@ -7,6 +9,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import com.edwardnigma.videodownloader.service.DownloaderService;
+
 import java.io.File;
 
 public class MainWindow {
@@ -15,7 +18,7 @@ public class MainWindow {
     private final Label urlLabel;
     private final TextField urlField;
     private final ToggleButton quality480Button;
-    private final ToggleButton  quality720Button;
+    private final ToggleButton quality720Button;
     private final ToggleGroup toggleGroup;
     private final Label savePathLabel;
     private final ProgressBar progressBar;
@@ -23,18 +26,16 @@ public class MainWindow {
     private final Button chooseFolderButton;
     private final Button downloadButton;
 
-    private final DownloaderService downloaderService =  new DownloaderService();
-
-
-    private QualityVideo qualityVideo =  QualityVideo.P480;
+    private final DownloaderService downloaderService = new DownloaderService();
+    private QualityVideo qualityVideo = QualityVideo.P480;
 
     public MainWindow() {
         this.root = new BorderPane();
         root.setPadding(new Insets(20));
         this.urlLabel = new Label("URL");
         this.urlField = new TextField();
-        this.quality480Button = new ToggleButton ("480p");
-        this.quality720Button = new ToggleButton ("720p");
+        this.quality480Button = new ToggleButton("480p");
+        this.quality720Button = new ToggleButton("720p");
         this.toggleGroup = new ToggleGroup();
         quality480Button.setToggleGroup(toggleGroup);
         quality480Button.setSelected(true);
@@ -79,10 +80,10 @@ public class MainWindow {
     public Parent getRoot() {
         return root;
     }
+
     public String getUrl() {
         return urlField.getText();
     }
-
 
     public String getSavePath() {
         return savePathField.getText();
@@ -92,31 +93,43 @@ public class MainWindow {
     public QualityVideo getQualityVideo() {
         return qualityVideo;
     }
+
     private void initialize() {
         initializeChooseFolderButton();
         initializeQualityButtons();
         initializeDownloadButton();
     }
+
     private void initializeQualityButtons() {
         quality480Button.setOnAction(event -> qualityVideo = QualityVideo.P480);
         quality720Button.setOnAction(event -> qualityVideo = QualityVideo.P720);
     }
+
     private void initializeChooseFolderButton() {
         chooseFolderButton.setOnAction(event -> {
             DirectoryChooser directoryChooser = new DirectoryChooser();
             directoryChooser.setInitialDirectory(new File(System.getProperty("user.home"))); // стартовая папка
             File selectedDirectory = directoryChooser.showDialog(root.getScene().getWindow());//окно + выбор
 
-            if (selectedDirectory != null){
+            if (selectedDirectory != null) {
                 savePathField.setText(selectedDirectory.getAbsolutePath());
             }
         });
     }
-    private void initializeDownloadButton(){
-        downloadButton.setOnAction(event -> {downloaderService.download(
-                getUrl(),
-                getSavePath(),
-                getQualityVideo()
-        );});
+
+    private void initializeDownloadButton() {
+        downloadButton.setOnAction(event -> {
+            Task<Void> task = downloaderService.download(
+                    getUrl(),
+                    getSavePath(),
+                    getQualityVideo()
+            );
+            progressBar.progressProperty().bind(task.progressProperty());
+            Thread thread = new Thread(task);
+            thread.setName("yt-dlp - download thread");
+            thread.setDaemon(true);
+            thread.start();
+        });
     }
+
 }
