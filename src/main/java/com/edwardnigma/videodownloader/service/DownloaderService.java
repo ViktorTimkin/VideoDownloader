@@ -63,6 +63,8 @@ public class DownloaderService {
             case P480 -> command.add("bv*[height<=480]+ba/b[height<=480]");
             case P720 -> command.add("bv*[height<=720]+ba/b[height<=720]");
         }
+        command.add("-o");
+        command.add("%(playlist_index)03d - %(title)s.%(ext)s"); // для нумерации плейлиста
         command.add("--ffmpeg-location");
         command.add(Tools.TOOLS.toString());
         command.add("-P");
