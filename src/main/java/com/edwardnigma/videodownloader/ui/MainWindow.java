@@ -95,6 +95,20 @@ public class MainWindow {
     }
 
     private void initialize() {
+        urlField.textProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (!newValue.isBlank()){
+                        urlField.setStyle("");
+                    }
+                });
+        savePathField.textProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (!newValue.isBlank()){
+                        savePathField.setStyle("");
+                    }
+                }
+        );
+
         initializeChooseFolderButton();
         initializeQualityButtons();
         initializeDownloadButton();
@@ -119,17 +133,50 @@ public class MainWindow {
 
     private void initializeDownloadButton() {
         downloadButton.setOnAction(event -> {
+
+            if(getUrl().isBlank()){
+                urlField.setStyle("-fx-border-color: red;");
+                return;
+            }
+            if (getSavePath().isBlank()) {
+                savePathField.setStyle("-fx-border-color: red;");
+                return;
+            }
+
+            lockInterface();
+
             Task<Void> task = downloaderService.download(
                     getUrl(),
                     getSavePath(),
                     getQualityVideo()
             );
             progressBar.progressProperty().bind(task.progressProperty());
+
+            task.setOnSucceeded(e -> unlockInterface());
+            task.setOnFailed(e -> unlockInterface());
+
             Thread thread = new Thread(task);
             thread.setName("yt-dlp - download thread");
             thread.setDaemon(true);
             thread.start();
         });
+    }
+
+    private void lockInterface(){
+        downloadButton.setDisable(true);
+        chooseFolderButton.setDisable(true);
+        urlField.setDisable(true);
+        savePathField.setDisable(true);
+        quality480Button.setDisable(true);
+        quality720Button.setDisable(true);
+    }
+    private void unlockInterface(){
+        downloadButton.setDisable(false);
+        chooseFolderButton.setDisable(false);
+        urlField.setDisable(false);
+        savePathField.setDisable(false);
+        quality480Button.setDisable(false);
+        quality720Button.setDisable(false);
     }
 
 }

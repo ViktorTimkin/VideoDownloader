@@ -7,7 +7,6 @@ import javafx.concurrent.Task;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -63,8 +62,16 @@ public class DownloaderService {
             case P480 -> command.add("bv*[height<=480]+ba/b[height<=480]");
             case P720 -> command.add("bv*[height<=720]+ba/b[height<=720]");
         }
-        command.add("-o");
-        command.add("%(playlist_index)03d - %(title)s.%(ext)s"); // для нумерации плейлиста
+
+        if (isPlaylist(url)) {
+            command.add("-o");
+            command.add("%(playlist_title)s/%(playlist_index)03d - %(title)s.%(ext)s");// для нумерации плейлиста
+        } else {
+            command.add("--no-playlist");
+            command.add("-o");
+            command.add("%(title)s.%(ext)s");
+        }
+
         command.add("--ffmpeg-location");
         command.add(Tools.TOOLS.toString());
         command.add("-P");
@@ -72,6 +79,10 @@ public class DownloaderService {
         command.add(url);
 
         return command;
+    }
+
+    private boolean isPlaylist(String url) {
+        return url.contains("/playlist?");
     }
 
 }
