@@ -9,11 +9,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class DownloaderService {
+    private Process currentProcess;
 
     public Task<Void> download(String url, String savePath, QualityVideo qualityVideo) {
         return new Task<>() {
@@ -24,12 +26,12 @@ public class DownloaderService {
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
                 processBuilder.redirectErrorStream(true);
                 try {
-                    Process process = processBuilder.start();
+                    currentProcess = processBuilder.start();
                     //нужно узнать что он получает и прочитать процесс
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(currentProcess.getInputStream()));
                     String line;
                     Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)?)%");
-                    while ((line = bufferedReader.readLine()) != null) {
+                    while (!isCancelled() && (line = bufferedReader.readLine()) != null) {
                         System.out.println(line);
                         if (line.contains("[download]")) {
                             Matcher matcher = pattern.matcher(line);
@@ -43,15 +45,26 @@ public class DownloaderService {
                         }
 
                     }
-                    int exitCode = process.waitFor();
+                    int exitCode = currentProcess.waitFor();
                     System.out.println("exitCode: " + exitCode);
 
                 } catch (IOException | InterruptedException e) {
                     throw new RuntimeException(e);
+                } finally {
+                    currentProcess = null;
                 }
                 return null;
             }
         };
+    }
+
+    public void cancelDownload() throws InterruptedException {
+        if(currentProcess != null && currentProcess.isAlive()){
+            currentProcess.destroy();
+            if (!currentProcess.waitFor(2, TimeUnit.SECONDS)) {
+                currentProcess.destroyForcibly();
+            }
+        }
     }
 
     private List<String> buildCommand(String url, String savePath, QualityVideo qualityVideo) {

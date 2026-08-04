@@ -25,9 +25,11 @@ public class MainWindow {
     private final TextField savePathField;
     private final Button chooseFolderButton;
     private final Button downloadButton;
+    private final Button cancelButton;
 
     private final DownloaderService downloaderService = new DownloaderService();
     private QualityVideo qualityVideo = QualityVideo.P480;
+    private Task<Void> currentTask;
 
     public MainWindow() {
         this.root = new BorderPane();
@@ -45,6 +47,7 @@ public class MainWindow {
         savePathField.setPrefWidth(500);
         this.chooseFolderButton = new Button("Выбрать");
         this.downloadButton = new Button("Скачать");
+        this.cancelButton = new Button("Отмена");
         this.progressBar = new ProgressBar(0);
         progressBar.setMaxWidth(Double.MAX_VALUE);
 
@@ -62,13 +65,19 @@ public class MainWindow {
                 chooseFolderButton
         );
 
+        HBox downloadCancelButton = new HBox(730);
+        downloadCancelButton.getChildren().addAll(
+                downloadButton,
+                cancelButton
+        );
+
         VBox vBox = new VBox(10);
         vBox.getChildren().addAll(
                 urlLabel,
                 urlField,
                 qualityHBox,
                 savePathHBox,
-                downloadButton,
+                downloadCancelButton,
                 progressBar
         );
 
@@ -112,6 +121,7 @@ public class MainWindow {
         initializeChooseFolderButton();
         initializeQualityButtons();
         initializeDownloadButton();
+        initializeCancelButton();
     }
 
     private void initializeQualityButtons() {
@@ -145,20 +155,35 @@ public class MainWindow {
 
             lockInterface();
 
-            Task<Void> task = downloaderService.download(
+            currentTask = downloaderService.download(
                     getUrl(),
                     getSavePath(),
                     getQualityVideo()
             );
-            progressBar.progressProperty().bind(task.progressProperty());
+            progressBar.progressProperty().bind(currentTask.progressProperty());
 
-            task.setOnSucceeded(e -> unlockInterface());
-            task.setOnFailed(e -> unlockInterface());
+            currentTask.setOnSucceeded(e -> unlockInterface());
+            currentTask.setOnFailed(e -> unlockInterface());
+            currentTask.setOnCancelled(e -> unlockInterface());
 
-            Thread thread = new Thread(task);
+            Thread thread = new Thread(currentTask);
             thread.setName("yt-dlp - download thread");
             thread.setDaemon(true);
             thread.start();
+        });
+    }
+
+    private void initializeCancelButton(){
+        cancelButton.setOnAction(event -> {
+            if(currentTask != null){
+                currentTask.cancel();
+            }
+            try {
+                downloaderService.cancelDownload();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
         });
     }
 
@@ -169,6 +194,7 @@ public class MainWindow {
         savePathField.setDisable(true);
         quality480Button.setDisable(true);
         quality720Button.setDisable(true);
+        cancelButton.setDisable(false);
     }
     private void unlockInterface(){
         downloadButton.setDisable(false);
@@ -177,6 +203,10 @@ public class MainWindow {
         savePathField.setDisable(false);
         quality480Button.setDisable(false);
         quality720Button.setDisable(false);
+        cancelButton.setDisable(true);
+        progressBar.progressProperty().unbind();
+        progressBar.setProgress(0);
+        currentTask = null; // чтобы не оставалась ссылка на старую задачу
     }
 
 }
