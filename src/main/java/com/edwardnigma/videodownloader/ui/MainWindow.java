@@ -26,7 +26,7 @@ public class MainWindow {
     private final Button chooseFolderButton;
     private final Button downloadButton;
     private final Button cancelButton;
-
+    private final Label downloadInfoLabel;
     private final DownloaderService downloaderService = new DownloaderService();
     private QualityVideo qualityVideo = QualityVideo.P480;
     private Task<Void> currentTask;
@@ -50,7 +50,8 @@ public class MainWindow {
         this.cancelButton = new Button("Отмена");
         this.progressBar = new ProgressBar(0);
         progressBar.setMaxWidth(Double.MAX_VALUE);
-
+        this.downloadInfoLabel = new Label();
+        downloadInfoLabel.setWrapText(true);
 
         HBox qualityHBox = new HBox(10);
         qualityHBox.getChildren().addAll(
@@ -78,7 +79,8 @@ public class MainWindow {
                 qualityHBox,
                 savePathHBox,
                 downloadCancelButton,
-                progressBar
+                progressBar,
+                downloadInfoLabel
         );
 
         root.setCenter(vBox);
@@ -160,11 +162,24 @@ public class MainWindow {
                     getSavePath(),
                     getQualityVideo()
             );
+            downloadInfoLabel.textProperty().bind(currentTask.messageProperty()); // для доп информации
             progressBar.progressProperty().bind(currentTask.progressProperty());
 
-            currentTask.setOnSucceeded(e -> unlockInterface());
-            currentTask.setOnFailed(e -> unlockInterface());
-            currentTask.setOnCancelled(e -> unlockInterface());
+            currentTask.setOnSucceeded(e -> {
+                downloadInfoLabel.textProperty().unbind();
+                downloadInfoLabel.setText("Скачивание завершено.");
+                unlockInterface();
+            });
+            currentTask.setOnFailed(e -> {
+                downloadInfoLabel.textProperty().unbind();
+                downloadInfoLabel.setText("Ошибка скачивания");
+                unlockInterface();
+            });
+            currentTask.setOnCancelled(e -> {
+                downloadInfoLabel.textProperty().unbind();
+                downloadInfoLabel.setText("Скачивание отменено.");
+                unlockInterface();
+            });
 
             Thread thread = new Thread(currentTask);
             thread.setName("yt-dlp - download thread");
