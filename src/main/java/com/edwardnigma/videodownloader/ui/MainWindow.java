@@ -1,5 +1,6 @@
 package com.edwardnigma.videodownloader.ui;
 
+import com.edwardnigma.videodownloader.service.SettingsService;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
@@ -106,6 +107,8 @@ public class MainWindow {
     }
 
     private void initialize() {
+        savePathField.setText(SettingsService.getLastFolder());
+
         urlField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     if (!newValue.isBlank()){
@@ -134,11 +137,13 @@ public class MainWindow {
     private void initializeChooseFolderButton() {
         chooseFolderButton.setOnAction(event -> {
             DirectoryChooser directoryChooser = new DirectoryChooser();
-            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home"))); // стартовая папка
+            directoryChooser.setInitialDirectory(new File(SettingsService.getLastFolder())); // стартовая папка
             File selectedDirectory = directoryChooser.showDialog(root.getScene().getWindow());//окно + выбор
 
             if (selectedDirectory != null) {
                 savePathField.setText(selectedDirectory.getAbsolutePath());
+
+                SettingsService.saveLastFolder(selectedDirectory.getAbsolutePath());
             }
         });
     }
