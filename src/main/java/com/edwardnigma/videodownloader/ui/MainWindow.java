@@ -4,7 +4,10 @@ import com.edwardnigma.videodownloader.service.SettingsService;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
-import javafx.scene.control.*;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -23,8 +26,10 @@ public class MainWindow {
     private final BorderPane root;
     private final Label urlLabel;
     private final TextField urlField;
+    private final ToggleButton quality360Button;
     private final ToggleButton quality480Button;
     private final ToggleButton quality720Button;
+    private final ToggleButton quality1080Button;
     private final ToggleGroup toggleGroup;
     private final Label savePathLabel;
     private final ProgressBar progressBar;
@@ -43,12 +48,16 @@ public class MainWindow {
         root.setPadding(new Insets(20));
         this.urlLabel = new Label("URL");
         this.urlField = new TextField();
+        this.quality360Button = new ToggleButton("360p");
         this.quality480Button = new ToggleButton("480p");
         this.quality720Button = new ToggleButton("720p");
+        this.quality1080Button = new ToggleButton("1080p");
         this.toggleGroup = new ToggleGroup();
+        quality360Button.setToggleGroup(toggleGroup);
         quality480Button.setToggleGroup(toggleGroup);
-        quality480Button.setSelected(true);
         quality720Button.setToggleGroup(toggleGroup);
+        quality1080Button.setToggleGroup(toggleGroup);
+        quality480Button.setSelected(true);
         this.savePathLabel = new Label("Папка сохранения");
         this.savePathField = new TextField();
         savePathField.setPrefWidth(500);
@@ -63,8 +72,10 @@ public class MainWindow {
 
         HBox qualityHBox = new HBox(10);
         qualityHBox.getChildren().addAll(
+                quality360Button,
                 quality480Button,
-                quality720Button
+                quality720Button,
+                quality1080Button
         );
 
         HBox savePathHBox = new HBox(20);
@@ -140,8 +151,10 @@ public class MainWindow {
     }
 
     private void initializeQualityButtons() {
+        quality360Button.setOnAction(event -> qualityVideo = QualityVideo.P360);
         quality480Button.setOnAction(event -> qualityVideo = QualityVideo.P480);
         quality720Button.setOnAction(event -> qualityVideo = QualityVideo.P720);
+        quality1080Button.setOnAction(event -> qualityVideo = QualityVideo.P1080);
     }
 
     private void initializeChooseFolderButton() {
@@ -230,8 +243,10 @@ public class MainWindow {
         chooseFolderButton.setDisable(true);
         urlField.setDisable(true);
         savePathField.setDisable(true);
+        quality360Button.setDisable(true);
         quality480Button.setDisable(true);
         quality720Button.setDisable(true);
+        quality1080Button.setDisable(true);
         cancelButton.setDisable(false);
 
     }
@@ -240,8 +255,10 @@ public class MainWindow {
         chooseFolderButton.setDisable(false);
         urlField.setDisable(false);
         savePathField.setDisable(false);
+        quality360Button.setDisable(false);
         quality480Button.setDisable(false);
         quality720Button.setDisable(false);
+        quality1080Button.setDisable(false);
         cancelButton.setDisable(true);
         progressBar.progressProperty().unbind();
         progressBar.setProgress(0);

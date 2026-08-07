@@ -48,9 +48,7 @@ public class DownloaderService {
                             Matcher matcher = pattern.matcher(line);
 
                             if (matcher.find()) {
-
                                 double progress = Double.parseDouble(matcher.group(1));
-
                                 updateProgress(progress, 100);
                             }
                         }
@@ -101,8 +99,10 @@ public class DownloaderService {
         command.add("utf-8");
         command.add("-f");
         switch (qualityVideo) {
+            case P360 -> command.add("bv*[height<=360]+ba/b[height<=360]");
             case P480 -> command.add("bv*[height<=480]+ba/b[height<=480]");
             case P720 -> command.add("bv*[height<=720]+ba/b[height<=720]");
+            case P1080 -> command.add("bv*[height<=1080]+ba/b[height<=1080]");
         }
 
         if (isPlaylist(url)) {
