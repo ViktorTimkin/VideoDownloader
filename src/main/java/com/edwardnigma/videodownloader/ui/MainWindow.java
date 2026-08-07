@@ -5,13 +5,18 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import com.edwardnigma.videodownloader.service.DownloaderService;
 
+import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 
 public class MainWindow {
 
@@ -31,6 +36,7 @@ public class MainWindow {
     private final DownloaderService downloaderService = new DownloaderService();
     private QualityVideo qualityVideo = QualityVideo.P480;
     private Task<Void> currentTask;
+    private final CheckBox openFolderCheckBox;
 
     public MainWindow() {
         this.root = new BorderPane();
@@ -53,6 +59,7 @@ public class MainWindow {
         progressBar.setMaxWidth(Double.MAX_VALUE);
         this.downloadInfoLabel = new Label();
         downloadInfoLabel.setWrapText(true);
+        this.openFolderCheckBox = new CheckBox("Открывать папку");
 
         HBox qualityHBox = new HBox(10);
         qualityHBox.getChildren().addAll(
@@ -60,20 +67,21 @@ public class MainWindow {
                 quality720Button
         );
 
-        HBox savePathHBox = new HBox(10);
+        HBox savePathHBox = new HBox(20);
         savePathHBox.getChildren().addAll(
                 savePathLabel,
                 savePathField,
-                chooseFolderButton
+                chooseFolderButton,
+                openFolderCheckBox
         );
 
-        HBox downloadCancelButton = new HBox(730);
+        HBox downloadCancelButton = new HBox(740);
         downloadCancelButton.getChildren().addAll(
                 downloadButton,
                 cancelButton
         );
 
-        VBox vBox = new VBox(10);
+        VBox vBox = new VBox(15);
         vBox.getChildren().addAll(
                 urlLabel,
                 urlField,
@@ -127,6 +135,8 @@ public class MainWindow {
         initializeQualityButtons();
         initializeDownloadButton();
         initializeCancelButton();
+        openFolderCheckBox.setSelected(SettingsService.isOpenFolderAfterDownload());
+        openFolderCheckBox.selectedProperty().addListener( (observable, oldValue, newValue) -> SettingsService.saveOpenFolderAfterDownload(newValue) );
     }
 
     private void initializeQualityButtons() {
@@ -142,7 +152,6 @@ public class MainWindow {
 
             if (selectedDirectory != null) {
                 savePathField.setText(selectedDirectory.getAbsolutePath());
-
                 SettingsService.saveLastFolder(selectedDirectory.getAbsolutePath());
             }
         });
@@ -173,6 +182,15 @@ public class MainWindow {
             currentTask.setOnSucceeded(e -> {
                 downloadInfoLabel.textProperty().unbind();
                 downloadInfoLabel.setText("Скачивание завершено.");
+
+                if (openFolderCheckBox.isSelected()) {
+                    try {
+                        Desktop.getDesktop().open(new File(getSavePath()));
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
                 unlockInterface();
             });
             currentTask.setOnFailed(e -> {
@@ -215,6 +233,7 @@ public class MainWindow {
         quality480Button.setDisable(true);
         quality720Button.setDisable(true);
         cancelButton.setDisable(false);
+
     }
     private void unlockInterface(){
         downloadButton.setDisable(false);
@@ -227,6 +246,7 @@ public class MainWindow {
         progressBar.progressProperty().unbind();
         progressBar.setProgress(0);
         currentTask = null; // чтобы не оставалась ссылка на старую задачу
+
     }
 
 }

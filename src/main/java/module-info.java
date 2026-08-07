@@ -6,6 +6,7 @@ module com.edwardnigma.videodownloader {
     requires com.almasb.fxgl.all;
     requires javafx.graphics;
     requires java.prefs;
+    requires java.desktop;
 
     opens com.edwardnigma.videodownloader to javafx.fxml;
     exports com.edwardnigma.videodownloader;
