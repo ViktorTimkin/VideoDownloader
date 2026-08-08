@@ -130,13 +130,13 @@ public class MainWindow {
 
         urlField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
-                    if (!newValue.isBlank()){
+                    if (!newValue.isBlank()) {
                         urlField.setStyle("");
                     }
                 });
         savePathField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
-                    if (!newValue.isBlank()){
+                    if (!newValue.isBlank()) {
                         savePathField.setStyle("");
                     }
                 }
@@ -147,7 +147,7 @@ public class MainWindow {
         initializeDownloadButton();
         initializeCancelButton();
         openFolderCheckBox.setSelected(SettingsService.isOpenFolderAfterDownload());
-        openFolderCheckBox.selectedProperty().addListener( (observable, oldValue, newValue) -> SettingsService.saveOpenFolderAfterDownload(newValue) );
+        openFolderCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> SettingsService.saveOpenFolderAfterDownload(newValue));
     }
 
     private void initializeQualityButtons() {
@@ -173,7 +173,7 @@ public class MainWindow {
     private void initializeDownloadButton() {
         downloadButton.setOnAction(event -> {
 
-            if(getUrl().isBlank()){
+            if (getUrl().isBlank()) {
                 urlField.setStyle("-fx-border-color: red;");
                 return;
             }
@@ -224,9 +224,9 @@ public class MainWindow {
         });
     }
 
-    private void initializeCancelButton(){
+    private void initializeCancelButton() {
         cancelButton.setOnAction(event -> {
-            if(currentTask != null){
+            if (currentTask != null) {
                 currentTask.cancel();
             }
             try {
@@ -238,7 +238,7 @@ public class MainWindow {
         });
     }
 
-    private void lockInterface(){
+    private void lockInterface() {
         downloadButton.setDisable(true);
         chooseFolderButton.setDisable(true);
         urlField.setDisable(true);
@@ -250,7 +250,8 @@ public class MainWindow {
         cancelButton.setDisable(false);
 
     }
-    private void unlockInterface(){
+
+    private void unlockInterface() {
         downloadButton.setDisable(false);
         chooseFolderButton.setDisable(false);
         urlField.setDisable(false);
