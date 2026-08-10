@@ -17,7 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import com.edwardnigma.videodownloader.service.DownloaderService;
 
-import java.awt.*;
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 
@@ -58,17 +58,17 @@ public class MainWindow {
         quality720Button.setToggleGroup(toggleGroup);
         quality1080Button.setToggleGroup(toggleGroup);
         quality480Button.setSelected(true);
-        this.savePathLabel = new Label("Папка сохранения");
+        this.savePathLabel = new Label("Save folder");
         this.savePathField = new TextField();
         savePathField.setPrefWidth(500);
-        this.chooseFolderButton = new Button("Выбрать");
-        this.downloadButton = new Button("Скачать");
-        this.cancelButton = new Button("Отмена");
+        this.chooseFolderButton = new Button("Choose");
+        this.downloadButton = new Button("Download");
+        this.cancelButton = new Button("Cancel");
         this.progressBar = new ProgressBar(0);
         progressBar.setMaxWidth(Double.MAX_VALUE);
         this.downloadInfoLabel = new Label();
         downloadInfoLabel.setWrapText(true);
-        this.openFolderCheckBox = new CheckBox("Открывать папку");
+        this.openFolderCheckBox = new CheckBox("Open folder");
 
         HBox qualityHBox = new HBox(10);
         qualityHBox.getChildren().addAll(
@@ -86,7 +86,7 @@ public class MainWindow {
                 openFolderCheckBox
         );
 
-        HBox downloadCancelButton = new HBox(740);
+        HBox downloadCancelButton = new HBox(710);
         downloadCancelButton.getChildren().addAll(
                 downloadButton,
                 cancelButton
@@ -194,7 +194,7 @@ public class MainWindow {
 
             currentTask.setOnSucceeded(e -> {
                 downloadInfoLabel.textProperty().unbind();
-                downloadInfoLabel.setText("Скачивание завершено.");
+                downloadInfoLabel.setText("Download complete.");
 
                 if (openFolderCheckBox.isSelected()) {
                     try {
@@ -208,12 +208,12 @@ public class MainWindow {
             });
             currentTask.setOnFailed(e -> {
                 downloadInfoLabel.textProperty().unbind();
-                downloadInfoLabel.setText("Ошибка скачивания");
+                downloadInfoLabel.setText("Download error");
                 unlockInterface();
             });
             currentTask.setOnCancelled(e -> {
                 downloadInfoLabel.textProperty().unbind();
-                downloadInfoLabel.setText("Скачивание отменено.");
+                downloadInfoLabel.setText("Download cancelled.");
                 unlockInterface();
             });
 
