@@ -18,6 +18,11 @@ import java.nio.file.Path;
 public class DownloaderService {
     private Process currentProcess;
 
+    // для отображения прогресса
+    private static final Pattern PROGRESS_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)%");
+    private static final Pattern PLAYLIST_PATTERN = Pattern.compile("Downloading item (\\d+) of (\\d+)");
+    private static final Pattern FILE_NAME_PATTERN = Pattern.compile("Destination: (.+)");
+
     public Task<Void> download(String url, String savePath, QualityVideo qualityVideo) {
         return new Task<>() {
             @Override
@@ -31,21 +36,16 @@ public class DownloaderService {
                 processBuilder.redirectErrorStream(true);
                 try {
                     currentProcess = processBuilder.start();
-                    //нужно узнать что он получает и прочитать процесс
                     BufferedReader bufferedReader = new BufferedReader(
                             new InputStreamReader(currentProcess.getInputStream(), StandardCharsets.UTF_8));
                     String line;
-                    Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)?)%");
-                    // для отображения прогресса
-                    Pattern playlistPattern = Pattern.compile("Downloading item (\\d+) of (\\d+)");
-                    Pattern fileNamePattern = Pattern.compile("Destination: (.+)");
 
                     while (!isCancelled() && (line = bufferedReader.readLine()) != null) {
                         System.out.println(line);
-                        Matcher playlistMatcher = playlistPattern.matcher(line);
-                        Matcher fileNameMatcher = fileNamePattern.matcher(line);
+                        Matcher playlistMatcher = PLAYLIST_PATTERN.matcher(line);
+                        Matcher fileNameMatcher = FILE_NAME_PATTERN.matcher(line);
                         if (line.contains("[download]")) {
-                            Matcher matcher = pattern.matcher(line);
+                            Matcher matcher = PROGRESS_PATTERN.matcher(line);
 
                             if (matcher.find()) {
                                 double progress = Double.parseDouble(matcher.group(1));
@@ -73,8 +73,12 @@ public class DownloaderService {
                     int exitCode = currentProcess.waitFor();
                     System.out.println("exitCode: " + exitCode);
 
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
+                    if (exitCode != 0 && !isCancelled()) {
+                        throw new IOException("yt-dlp exited with code: " + exitCode);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw e;
                 } finally {
                     currentProcess = null;
                 }
@@ -94,7 +98,7 @@ public class DownloaderService {
 
     private List<String> buildCommand(String url, String savePath, QualityVideo qualityVideo) {
         List<String> command = new ArrayList<>();
-        command.add(Tools.YT_DLP.toString());
+        command.add(ToolPaths.YT_DLP.toString());
         command.add("--encoding");
         command.add("utf-8");
         command.add("-f");
@@ -115,7 +119,7 @@ public class DownloaderService {
         }
 
         command.add("--ffmpeg-location");
-        command.add(Tools.TOOLS.toString());
+        command.add(ToolPaths.TOOLS_DIRECTORY.toString());
         command.add("-P");
         command.add(savePath);
         command.add(url);

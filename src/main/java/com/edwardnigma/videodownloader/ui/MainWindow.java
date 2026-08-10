@@ -3,6 +3,7 @@ package com.edwardnigma.videodownloader.ui;
 import com.edwardnigma.videodownloader.service.SettingsService;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.CheckBox;
@@ -13,6 +14,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import com.edwardnigma.videodownloader.service.DownloaderService;
@@ -24,14 +27,11 @@ import java.io.IOException;
 public class MainWindow {
 
     private final BorderPane root;
-    private final Label urlLabel;
     private final TextField urlField;
     private final ToggleButton quality360Button;
     private final ToggleButton quality480Button;
     private final ToggleButton quality720Button;
     private final ToggleButton quality1080Button;
-    private final ToggleGroup toggleGroup;
-    private final Label savePathLabel;
     private final ProgressBar progressBar;
     private final TextField savePathField;
     private final Button chooseFolderButton;
@@ -46,21 +46,20 @@ public class MainWindow {
     public MainWindow() {
         this.root = new BorderPane();
         root.setPadding(new Insets(20));
-        this.urlLabel = new Label("URL");
+        Label urlLabel = new Label("URL");
         this.urlField = new TextField();
         this.quality360Button = new ToggleButton("360p");
         this.quality480Button = new ToggleButton("480p");
         this.quality720Button = new ToggleButton("720p");
         this.quality1080Button = new ToggleButton("1080p");
-        this.toggleGroup = new ToggleGroup();
+        ToggleGroup toggleGroup = new ToggleGroup();
         quality360Button.setToggleGroup(toggleGroup);
         quality480Button.setToggleGroup(toggleGroup);
         quality720Button.setToggleGroup(toggleGroup);
         quality1080Button.setToggleGroup(toggleGroup);
         quality480Button.setSelected(true);
-        this.savePathLabel = new Label("Save folder");
+        Label savePathLabel = new Label("Save folder");
         this.savePathField = new TextField();
-        savePathField.setPrefWidth(500);
         this.chooseFolderButton = new Button("Choose");
         this.downloadButton = new Button("Download");
         this.cancelButton = new Button("Cancel");
@@ -85,10 +84,19 @@ public class MainWindow {
                 chooseFolderButton,
                 openFolderCheckBox
         );
+        //чтобы поле занимало всё свободное пространство между остальными элементами.
+        HBox.setHgrow(savePathField, Priority.ALWAYS);
+        savePathField.setMaxWidth(Double.MAX_VALUE);
 
-        HBox downloadCancelButton = new HBox(710);
-        downloadCancelButton.getChildren().addAll(
+        HBox buttonsBox  = new HBox();
+        buttonsBox.setAlignment(Pos.CENTER_LEFT); //выравнивание
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        buttonsBox.getChildren().addAll(
                 downloadButton,
+                spacer,
                 cancelButton
         );
 
@@ -98,7 +106,7 @@ public class MainWindow {
                 urlField,
                 qualityHBox,
                 savePathHBox,
-                downloadCancelButton,
+                buttonsBox ,
                 progressBar,
                 downloadInfoLabel
         );
@@ -119,7 +127,6 @@ public class MainWindow {
     public String getSavePath() {
         return savePathField.getText();
     }
-
 
     public QualityVideo getQualityVideo() {
         return qualityVideo;
