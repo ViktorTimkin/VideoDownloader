@@ -8,13 +8,6 @@ The application was originally created for downloading videos from YouTube, but 
 
 ![Video Downloader](docs/screenshot.png)
 
-## Technologies
-
-* Java 21
-* JavaFX 21
-* Maven
-* yt-dlp
-* FFmpeg
 
 ## External Tools
 
