@@ -17,11 +17,10 @@ import java.nio.file.Path;
 
 public class DownloaderService {
     private Process currentProcess;
-
-    // для отображения прогресса
     private static final Pattern PROGRESS_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)%");
     private static final Pattern PLAYLIST_PATTERN = Pattern.compile("Downloading item (\\d+) of (\\d+)");
     private static final Pattern FILE_NAME_PATTERN = Pattern.compile("Destination: (.+)");
+    private static final Pattern SIZE_PATTERN = Pattern.compile("of\\s+~?([\\d.]+(?:KiB|MiB|GiB|TiB))");
 
     public Task<Void> download(String url, String savePath, QualityVideo qualityVideo) {
         return new Task<>() {
@@ -30,6 +29,7 @@ public class DownloaderService {
                 int currentVideo = 1;
                 int totalVideos = 1;
                 String fileName = "";
+                String fileSize = "";
                 List<String> command = buildCommand(url, savePath, qualityVideo);
                 System.out.println(command);
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -42,33 +42,51 @@ public class DownloaderService {
 
                     while (!isCancelled() && (line = bufferedReader.readLine()) != null) {
                         System.out.println(line);
+
                         Matcher playlistMatcher = PLAYLIST_PATTERN.matcher(line);
                         Matcher fileNameMatcher = FILE_NAME_PATTERN.matcher(line);
-                        if (line.contains("[download]")) {
-                            Matcher matcher = PROGRESS_PATTERN.matcher(line);
 
-                            if (matcher.find()) {
-                                double progress = Double.parseDouble(matcher.group(1));
-                                updateProgress(progress, 100);
-                            }
-                        }
                         if (playlistMatcher.find()) {
                             currentVideo = Integer.parseInt(playlistMatcher.group(1));
                             totalVideos = Integer.parseInt(playlistMatcher.group(2));
-                            updateMessage("Видео " + currentVideo +
-                                    " из " + totalVideos +
-                                    " — " + fileName);
+
+                            fileName = "";
+                            fileSize = "";
+
+                            updateMessage("Video " + currentVideo + " of " + totalVideos);
                         }
+
                         if (fileNameMatcher.find()) {
                             fileName = Path.of(fileNameMatcher.group(1))
                                     .getFileName()
                                     .toString();
+
                             fileName = fileName.replaceFirst("\\.f\\d+\\.[^.]+$", "");
-                            updateMessage("Видео " + currentVideo +
-                                    " из " + totalVideos +
-                                    " — " + fileName);
+
+                            updateMessage("Video " + currentVideo +
+                                    " of " + totalVideos +
+                                    " — " + fileName +
+                                    (fileSize.isEmpty() ? "" : "\nSize: " + fileSize));
                         }
 
+                        if (line.contains("[download]")) {
+                            Matcher progressMatcher = PROGRESS_PATTERN.matcher(line);
+                            Matcher sizeMatcher = SIZE_PATTERN.matcher(line);
+
+                            if (progressMatcher.find()) {
+                                double progress = Double.parseDouble(progressMatcher.group(1));
+                                updateProgress(progress, 100);
+                            }
+
+                            if (sizeMatcher.find()) {
+                                fileSize = sizeMatcher.group(1);
+
+                                updateMessage("Video " + currentVideo +
+                                        " of " + totalVideos +
+                                        " — " + fileName +
+                                        "\nSize: " + fileSize);
+                            }
+                        }
                     }
                     int exitCode = currentProcess.waitFor();
                     System.out.println("exitCode: " + exitCode);

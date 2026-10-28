@@ -84,12 +84,12 @@ public class MainWindow {
                 chooseFolderButton,
                 openFolderCheckBox
         );
-        //чтобы поле занимало всё свободное пространство между остальными элементами.
+
         HBox.setHgrow(savePathField, Priority.ALWAYS);
         savePathField.setMaxWidth(Double.MAX_VALUE);
 
         HBox buttonsBox  = new HBox();
-        buttonsBox.setAlignment(Pos.CENTER_LEFT); //выравнивание
+        buttonsBox.setAlignment(Pos.CENTER_LEFT);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
