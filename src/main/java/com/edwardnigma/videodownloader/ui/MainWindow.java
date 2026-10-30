@@ -1,6 +1,8 @@
 package com.edwardnigma.videodownloader.ui;
 
 import com.edwardnigma.videodownloader.service.SettingsService;
+import com.edwardnigma.videodownloader.service.VideoInfoService;
+import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -19,6 +21,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import com.edwardnigma.videodownloader.service.DownloaderService;
+import javafx.util.Duration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -42,6 +45,9 @@ public class MainWindow {
     private QualityVideo qualityVideo = QualityVideo.P480;
     private Task<Void> currentTask;
     private final CheckBox openFolderCheckBox;
+    private final VideoInfoService videoInfoService = new VideoInfoService();
+    private final Label videoSizeLabel = new Label();
+    private Task<String> sizeTask;
 
     public MainWindow() {
         this.root = new BorderPane();
@@ -94,9 +100,11 @@ public class MainWindow {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        buttonsBox.setSpacing(15);
         buttonsBox.getChildren().addAll(
                 downloadButton,
                 spacer,
+                videoSizeLabel,
                 cancelButton
         );
 
@@ -131,10 +139,54 @@ public class MainWindow {
     public QualityVideo getQualityVideo() {
         return qualityVideo;
     }
+    private void updateVideoSize() {
 
+        if (sizeTask != null) {
+            sizeTask.cancel();
+            sizeTask = null;
+        }
+
+        if (getUrl().isBlank()) {
+            videoSizeLabel.setText("");
+            return;
+        }
+
+        videoSizeLabel.setText("Checking size...");
+
+        Task<String> task = videoInfoService.checkSize(
+                getUrl(),
+                getQualityVideo()
+        );
+
+        sizeTask = task;
+
+        task.setOnSucceeded(event -> {
+            if (sizeTask == task) {
+                videoSizeLabel.setText(task.getValue());
+            }
+        });
+
+        task.setOnFailed(event -> {
+            if (sizeTask == task) {
+                videoSizeLabel.setText("Size unavailable");
+                task.getException().printStackTrace();
+            }
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.setName("yt-dlp - size check");
+        thread.start();
+    }
     private void initialize() {
         savePathField.setText(SettingsService.getLastFolder());
+        PauseTransition urlPause = new PauseTransition(Duration.millis(400));
 
+        urlField.textProperty().addListener((observable, oldValue, newValue) -> {
+            urlPause.stop();
+            urlPause.setOnFinished(event -> updateVideoSize());
+            urlPause.playFromStart();
+        });
         urlField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     if (!newValue.isBlank()) {
@@ -158,10 +210,25 @@ public class MainWindow {
     }
 
     private void initializeQualityButtons() {
-        quality360Button.setOnAction(event -> qualityVideo = QualityVideo.P360);
-        quality480Button.setOnAction(event -> qualityVideo = QualityVideo.P480);
-        quality720Button.setOnAction(event -> qualityVideo = QualityVideo.P720);
-        quality1080Button.setOnAction(event -> qualityVideo = QualityVideo.P1080);
+        quality360Button.setOnAction(event -> {
+            qualityVideo = QualityVideo.P360;
+            updateVideoSize();
+        });
+
+        quality480Button.setOnAction(event -> {
+            qualityVideo = QualityVideo.P480;
+            updateVideoSize();
+        });
+
+        quality720Button.setOnAction(event -> {
+            qualityVideo = QualityVideo.P720;
+            updateVideoSize();
+        });
+
+        quality1080Button.setOnAction(event -> {
+            qualityVideo = QualityVideo.P1080;
+            updateVideoSize();
+        });
     }
 
     private void initializeChooseFolderButton() {
@@ -187,6 +254,10 @@ public class MainWindow {
             if (getSavePath().isBlank()) {
                 savePathField.setStyle("-fx-border-color: red;");
                 return;
+            }
+            if (sizeTask != null) {
+                sizeTask.cancel();
+                sizeTask = null;
             }
 
             lockInterface();
