@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,15 +77,23 @@ public class DownloaderService {
                             if (progressMatcher.find()) {
                                 double progress = Double.parseDouble(progressMatcher.group(1));
                                 updateProgress(progress, 100);
-                            }
 
-                            if (sizeMatcher.find()) {
-                                fileSize = sizeMatcher.group(1);
+                                if (sizeMatcher.find()) {
+                                    fileSize = sizeMatcher.group(1);
 
-                                updateMessage("Video " + currentVideo +
-                                        " of " + totalVideos +
-                                        " — " + fileName +
-                                        "\nSize: " + fileSize);
+                                    double totalSize = Double.parseDouble(
+                                            fileSize.replaceAll("[^\\d.]", "")
+                                    );
+
+                                    double downloadedSize = totalSize * progress / 100;
+
+                                    updateMessage("Video " + currentVideo +
+                                            " of " + totalVideos +
+                                            " — " + fileName +
+                                            "\nSize: " +
+                                            String.format(Locale.US, "%.2f", downloadedSize) +
+                                            " / " + fileSize);
+                                }
                             }
                         }
                     }
@@ -102,7 +111,9 @@ public class DownloaderService {
                 }
                 return null;
             }
-        };
+        }
+
+                ;
     }
 
     public void cancelDownload() throws InterruptedException {

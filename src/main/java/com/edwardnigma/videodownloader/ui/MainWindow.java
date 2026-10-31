@@ -103,8 +103,8 @@ public class MainWindow {
         buttonsBox.setSpacing(15);
         buttonsBox.getChildren().addAll(
                 downloadButton,
-                spacer,
                 videoSizeLabel,
+                spacer,
                 cancelButton
         );
 
