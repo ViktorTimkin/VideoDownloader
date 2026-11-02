@@ -2,7 +2,7 @@ package com.edwardnigma.videodownloader.service;
 
 public class ToolUpdateService {
     public UpdateInfo checkForUpdates(){
-
+        return null;
     }
 
     public void update(){
