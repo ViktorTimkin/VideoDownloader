@@ -4,6 +4,7 @@ module com.edwardnigma.videodownloader {
     requires java.prefs;
     requires java.desktop;
     requires com.fasterxml.jackson.databind;
+    requires java.net.http;
 
     exports com.edwardnigma.videodownloader;
 }
