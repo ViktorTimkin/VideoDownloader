@@ -1,31 +1,30 @@
 package com.edwardnigma.videodownloader.ui;
 
-import com.edwardnigma.videodownloader.service.SettingsService;
-import com.edwardnigma.videodownloader.service.VideoInfoService;
+import com.edwardnigma.videodownloader.service.ToolUpdateService;
+import com.edwardnigma.videodownloader.service.UpdateInfo;
+import com.edwardnigma.videodownloader.service.*;
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
-import com.edwardnigma.videodownloader.service.DownloaderService;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.scene.control.Tooltip;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 public class MainWindow {
 
@@ -41,13 +40,18 @@ public class MainWindow {
     private final Button downloadButton;
     private final Button cancelButton;
     private final Label downloadInfoLabel;
+    private boolean checkingUpdates;
+    private boolean installingUpdate;
+    private UpdateInfo pendingUpdate;
     private final DownloaderService downloaderService = new DownloaderService();
     private QualityVideo qualityVideo = QualityVideo.P480;
     private Task<Void> currentTask;
     private final CheckBox openFolderCheckBox;
     private final VideoInfoService videoInfoService = new VideoInfoService();
+    private final ToolUpdateService toolUpdateService = new ToolUpdateService();
     private final Label videoSizeLabel = new Label();
     private Task<String> sizeTask;
+    private final Button updateButton = new Button("↻");
 
     public MainWindow() {
         this.root = new BorderPane();
@@ -94,7 +98,7 @@ public class MainWindow {
         HBox.setHgrow(savePathField, Priority.ALWAYS);
         savePathField.setMaxWidth(Double.MAX_VALUE);
 
-        HBox buttonsBox  = new HBox();
+        HBox buttonsBox = new HBox();
         buttonsBox.setAlignment(Pos.CENTER_LEFT);
 
         Region spacer = new Region();
@@ -105,7 +109,8 @@ public class MainWindow {
                 downloadButton,
                 videoSizeLabel,
                 spacer,
-                cancelButton
+                cancelButton,
+                updateButton
         );
 
         VBox vBox = new VBox(15);
@@ -114,7 +119,7 @@ public class MainWindow {
                 urlField,
                 qualityHBox,
                 savePathHBox,
-                buttonsBox ,
+                buttonsBox,
                 progressBar,
                 downloadInfoLabel
         );
@@ -139,6 +144,11 @@ public class MainWindow {
     public QualityVideo getQualityVideo() {
         return qualityVideo;
     }
+
+    public boolean isInstallingUpdate() {
+        return installingUpdate;
+    }
+
     private void updateVideoSize() {
 
         if (sizeTask != null) {
@@ -172,12 +182,14 @@ public class MainWindow {
                 task.getException().printStackTrace();
             }
         });
-
+        showPendingUpdate();
+        task.setOnCancelled(event -> showPendingUpdate());
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.setName("yt-dlp - size check");
         thread.start();
     }
+
     private void initialize() {
         savePathField.setText(SettingsService.getLastFolder());
         PauseTransition urlPause = new PauseTransition(Duration.millis(400));
@@ -206,7 +218,223 @@ public class MainWindow {
         initializeDownloadButton();
         initializeCancelButton();
         openFolderCheckBox.setSelected(SettingsService.isOpenFolderAfterDownload());
-        openFolderCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> SettingsService.saveOpenFolderAfterDownload(newValue));
+        openFolderCheckBox
+                .selectedProperty()
+                .addListener((observable, oldValue, newValue)
+                        -> SettingsService.saveOpenFolderAfterDownload(newValue));
+        updateButton.setTooltip(new Tooltip("Check for yt-dlp updates"));
+        updateButton.setFocusTraversable(false);
+        updateButton.setOnAction(event -> checkForUpdates(true));
+    }
+
+    public void checkForUpdates(boolean manual) {
+
+        if (checkingUpdates || installingUpdate || pendingUpdate != null
+                || currentTask != null) {
+            return;
+        }
+
+        checkingUpdates = true;
+        refreshUpdateButton();
+
+        Task<UpdateInfo> task = new Task<>() {
+            @Override
+            protected UpdateInfo call() throws Exception {
+                return toolUpdateService.checkForUpdates();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            checkingUpdates = false;
+
+            UpdateInfo info = task.getValue();
+
+            if (info.updateAvailable()) {
+                pendingUpdate = info;
+                showPendingUpdate();
+            } else if (manual) {
+                showUpdateMessage(
+                        Alert.AlertType.INFORMATION,
+                        "No updates available",
+                        "Your yt-dlp version is up to date."
+                );
+            }
+
+            refreshUpdateButton();
+        });
+
+        task.setOnFailed(event -> {
+            checkingUpdates = false;
+            refreshUpdateButton();
+
+            task.getException().printStackTrace();
+
+            if (manual) {
+                showUpdateMessage(
+                        Alert.AlertType.WARNING,
+                        "Update check failed",
+                        "Could not check for updates. Please check your internet connection."
+                );
+            }
+        });
+
+        Thread thread = new Thread(task, "yt-dlp-update-check");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void refreshUpdateButton() {
+        updateButton.setDisable(
+                checkingUpdates
+                        || installingUpdate
+                        || pendingUpdate != null
+                        || currentTask != null
+        );
+    }
+
+    private void showPendingUpdate() {
+
+        if (pendingUpdate == null
+                || checkingUpdates
+                || installingUpdate
+                || currentTask != null
+                || (sizeTask != null && !sizeTask.isDone())) {
+            return;
+        }
+
+        UpdateInfo info = pendingUpdate;
+        pendingUpdate = null;
+
+        double sizeMiB = info.downloadSize() / (1024.0 * 1024.0);
+
+        ButtonType updateNow = new ButtonType(
+                "Update now",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        ButtonType later = new ButtonType(
+                "Later",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+        dialog.initOwner(root.getScene().getWindow());
+
+        dialog.setTitle("yt-dlp Update");
+        dialog.setHeaderText("A new yt-dlp version is available");
+
+        dialog.setContentText(
+                "Installed: " + info.installedVersion() +
+                        "\nAvailable: " + info.latestVersion() +
+                        "\nDownload size: " +
+                        String.format(Locale.US, "%.2f MiB", sizeMiB) +
+                        "\n\nUpdating is recommended to maintain compatibility "
+                        + "with video hosting platforms."
+        );
+
+        dialog.getButtonTypes().setAll(updateNow, later);
+
+        if (dialog.showAndWait().orElse(later) == updateNow) {
+            installUpdate(info);
+        }
+
+        refreshUpdateButton();
+    }
+
+    private void installUpdate(UpdateInfo info) {
+
+        installingUpdate = true;
+        refreshUpdateButton();
+
+        Stage progressStage = new Stage();
+        progressStage.initOwner(root.getScene().getWindow());
+        progressStage.initModality(Modality.WINDOW_MODAL);
+
+        progressStage.setTitle("Updating yt-dlp");
+        progressStage.setResizable(false);
+
+        Label statusLabel = new Label("Downloading and installing yt-dlp...");
+        ProgressIndicator indicator = new ProgressIndicator();
+
+        VBox content = new VBox(15, statusLabel, indicator);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
+        progressStage.setScene(new Scene(content, 340, 150));
+
+        progressStage.setOnCloseRequest(event -> event.consume());
+
+        progressStage.show();
+
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() throws Exception {
+                return toolUpdateService.update();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            progressStage.close();
+            installingUpdate = false;
+            refreshUpdateButton();
+
+            String installedVersion = task.getValue();
+
+            boolean stillOutdated = new UpdateInfo(
+                    installedVersion,
+                    info.latestVersion(),
+                    info.downloadSize()
+            ).updateAvailable();
+
+            if (stillOutdated) {
+                showUpdateMessage(
+                        Alert.AlertType.WARNING,
+                        "Update incomplete",
+                        "The installed version is still older than the available release."
+                );
+            } else {
+                showUpdateMessage(
+                        Alert.AlertType.INFORMATION,
+                        "Update completed",
+                        "yt-dlp has been updated to version " + installedVersion
+                );
+            }
+
+            if (!getUrl().isBlank()) {
+                updateVideoSize();
+            }
+        });
+
+        task.setOnFailed(event -> {
+            progressStage.close();
+            installingUpdate = false;
+            refreshUpdateButton();
+
+            task.getException().printStackTrace();
+
+            showUpdateMessage(
+                    Alert.AlertType.ERROR,
+                    "Update failed",
+                    "Could not update yt-dlp:\n" + task.getException().getMessage()
+            );
+        });
+
+        Thread thread = new Thread(task, "yt-dlp-update");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showUpdateMessage(
+            Alert.AlertType type,
+            String title,
+            String message
+    ) {
+        Alert alert = new Alert(type);
+        alert.initOwner(root.getScene().getWindow());
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void initializeQualityButtons() {
@@ -342,6 +570,8 @@ public class MainWindow {
         progressBar.progressProperty().unbind();
         progressBar.setProgress(0);
         currentTask = null; // чтобы не оставалась ссылка на старую задачу
+        refreshUpdateButton();
+        showPendingUpdate();
 
     }
 

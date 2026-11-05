@@ -1,11 +1,7 @@
 
 package com.edwardnigma.videodownloader.service;
 
-public record UpdateInfo(
-        String installedVersion,
-        String latestVersion,
-        long downloadSize
-) {
+public record UpdateInfo(String installedVersion, String latestVersion, long downloadSize) {
 
     public boolean updateAvailable() {
         String[] installed = installedVersion.split("\\.");

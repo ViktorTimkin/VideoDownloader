@@ -98,7 +98,6 @@ public final class ToolUpdateService {
 
     public String update() throws IOException, InterruptedException {
 
-        // Use the same stable channel as the GitHub release check.
         runCommand(
                 List.of(
                         ToolPaths.YT_DLP.toString(),
@@ -108,7 +107,6 @@ public final class ToolUpdateService {
                 UPDATE_TIMEOUT
         );
 
-        // Return the installed version for verification by the UI.
         return getInstalledVersion();
     }
 

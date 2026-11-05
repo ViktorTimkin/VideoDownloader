@@ -24,6 +24,12 @@ public class VideoDownloaderApplication extends Application {
         stage.setScene(scene);
         stage.setTitle("Video Downloader");
         stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icon.png"))));
+        stage.setOnCloseRequest(event -> {
+            if (window.isInstallingUpdate()) {
+                event.consume();
+            }
+        });
         stage.show();
+        window.checkForUpdates(false);
     }
 }
