@@ -1,8 +1,10 @@
 package com.edwardnigma.videodownloader.ui;
 
+import com.edwardnigma.videodownloader.service.DownloaderService;
+import com.edwardnigma.videodownloader.service.SettingsService;
 import com.edwardnigma.videodownloader.service.ToolUpdateService;
 import com.edwardnigma.videodownloader.service.UpdateInfo;
-import com.edwardnigma.videodownloader.service.*;
+import com.edwardnigma.videodownloader.service.VideoInfoService;
 import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -19,7 +21,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.scene.control.Tooltip;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -174,6 +175,7 @@ public class MainWindow {
             if (sizeTask == task) {
                 videoSizeLabel.setText(task.getValue());
             }
+            showPendingUpdate();
         });
 
         task.setOnFailed(event -> {
@@ -181,7 +183,9 @@ public class MainWindow {
                 videoSizeLabel.setText("Size unavailable");
                 task.getException().printStackTrace();
             }
+            showPendingUpdate();
         });
+        task.setOnCancelled(event -> showPendingUpdate());
         showPendingUpdate();
         task.setOnCancelled(event -> showPendingUpdate());
         Thread thread = new Thread(task);
@@ -253,7 +257,8 @@ public class MainWindow {
                 pendingUpdate = info;
                 showPendingUpdate();
             } else if (manual) {
-                showUpdateMessage(
+                UpdateDialog.showMessage(
+                        root.getScene().getWindow(),
                         Alert.AlertType.INFORMATION,
                         "No updates available",
                         "Your yt-dlp version is up to date."
@@ -270,7 +275,8 @@ public class MainWindow {
             task.getException().printStackTrace();
 
             if (manual) {
-                showUpdateMessage(
+                UpdateDialog.showMessage(
+                        root.getScene().getWindow(),
                         Alert.AlertType.WARNING,
                         "Update check failed",
                         "Could not check for updates. Please check your internet connection."
@@ -387,13 +393,15 @@ public class MainWindow {
             ).updateAvailable();
 
             if (stillOutdated) {
-                showUpdateMessage(
+                UpdateDialog.showMessage(
+                        root.getScene().getWindow(),
                         Alert.AlertType.WARNING,
                         "Update incomplete",
                         "The installed version is still older than the available release."
                 );
             } else {
-                showUpdateMessage(
+                UpdateDialog.showMessage(
+                        root.getScene().getWindow(),
                         Alert.AlertType.INFORMATION,
                         "Update completed",
                         "yt-dlp has been updated to version " + installedVersion
@@ -411,8 +419,8 @@ public class MainWindow {
             refreshUpdateButton();
 
             task.getException().printStackTrace();
-
-            showUpdateMessage(
+            UpdateDialog.showMessage(
+                    root.getScene().getWindow(),
                     Alert.AlertType.ERROR,
                     "Update failed",
                     "Could not update yt-dlp:\n" + task.getException().getMessage()
@@ -424,18 +432,6 @@ public class MainWindow {
         thread.start();
     }
 
-    private void showUpdateMessage(
-            Alert.AlertType type,
-            String title,
-            String message
-    ) {
-        Alert alert = new Alert(type);
-        alert.initOwner(root.getScene().getWindow());
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
 
     private void initializeQualityButtons() {
         quality360Button.setOnAction(event -> {
