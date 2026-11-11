@@ -25,7 +25,6 @@ import javafx.util.Duration;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 
 public class MainWindow {
 
@@ -311,36 +310,10 @@ public class MainWindow {
         UpdateInfo info = pendingUpdate;
         pendingUpdate = null;
 
-        double sizeMiB = info.downloadSize() / (1024.0 * 1024.0);
-
-        ButtonType updateNow = new ButtonType(
-                "Update now",
-                ButtonBar.ButtonData.OK_DONE
-        );
-
-        ButtonType later = new ButtonType(
-                "Later",
-                ButtonBar.ButtonData.CANCEL_CLOSE
-        );
-
-        Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
-        dialog.initOwner(root.getScene().getWindow());
-
-        dialog.setTitle("yt-dlp Update");
-        dialog.setHeaderText("A new yt-dlp version is available");
-
-        dialog.setContentText(
-                "Installed: " + info.installedVersion() +
-                        "\nAvailable: " + info.latestVersion() +
-                        "\nDownload size: " +
-                        String.format(Locale.US, "%.2f MiB", sizeMiB) +
-                        "\n\nUpdating is recommended to maintain compatibility "
-                        + "with video hosting platforms."
-        );
-
-        dialog.getButtonTypes().setAll(updateNow, later);
-
-        if (dialog.showAndWait().orElse(later) == updateNow) {
+        if (UpdateDialog.confirmUpdate(
+                root.getScene().getWindow(),
+                info
+        )) {
             installUpdate(info);
         }
 
