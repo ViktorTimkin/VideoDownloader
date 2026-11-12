@@ -321,29 +321,12 @@ public class MainWindow {
     }
 
     private void installUpdate(UpdateInfo info) {
-
         installingUpdate = true;
         refreshUpdateButton();
 
-        Stage progressStage = new Stage();
-        progressStage.initOwner(root.getScene().getWindow());
-        progressStage.initModality(Modality.WINDOW_MODAL);
-
-        progressStage.setTitle("Updating yt-dlp");
-        progressStage.setResizable(false);
-
-        Label statusLabel = new Label("Downloading and installing yt-dlp...");
-        ProgressIndicator indicator = new ProgressIndicator();
-
-        VBox content = new VBox(15, statusLabel, indicator);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(20));
-
-        progressStage.setScene(new Scene(content, 340, 150));
-
-        progressStage.setOnCloseRequest(event -> event.consume());
-
-        progressStage.show();
+        Stage progressStage = UpdateDialog.showProgress(
+                root.getScene().getWindow()
+        );
 
         Task<String> task = new Task<>() {
             @Override

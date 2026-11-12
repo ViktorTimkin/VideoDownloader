@@ -6,6 +6,15 @@ import javafx.stage.Window;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import java.util.Locale;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 public final class UpdateDialog {
 
@@ -25,6 +34,7 @@ public final class UpdateDialog {
         alert.setContentText(message);
         alert.showAndWait();
     }
+    // =подтверждение обновления
     public static boolean confirmUpdate(Window owner, UpdateInfo info) {
 
         double sizeMiB = info.downloadSize() / (1024.0 * 1024.0);
@@ -58,4 +68,32 @@ public final class UpdateDialog {
 
         return dialog.showAndWait().orElse(later) == updateNow;
     }
+
+    // обычные уведомления
+    public static Stage showProgress(Window owner) {
+
+        Stage progressStage = new Stage();
+        progressStage.initOwner(owner);
+        progressStage.initModality(Modality.WINDOW_MODAL);
+
+        progressStage.setTitle("Updating yt-dlp");
+        progressStage.setResizable(false);
+
+        Label statusLabel = new Label("Downloading and installing yt-dlp...");
+        ProgressIndicator indicator = new ProgressIndicator();
+
+        VBox content = new VBox(15, statusLabel, indicator);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
+        progressStage.setScene(new Scene(content, 340, 150));
+
+        progressStage.setOnCloseRequest(event -> event.consume());
+
+        progressStage.show();
+
+        return progressStage;
+    }
+
+
 }
