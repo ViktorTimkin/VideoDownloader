@@ -14,7 +14,6 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 public final class UpdateDialog {
 
@@ -94,6 +93,5 @@ public final class UpdateDialog {
 
         return progressStage;
     }
-
 
 }
