@@ -1,5 +1,7 @@
 package com.edwardnigma.videodownloader.ui;
 
+import com.edwardnigma.videodownloader.AppVersion;
+import com.edwardnigma.videodownloader.service.ApplicationUpdateService.ReleaseInfo;
 import com.edwardnigma.videodownloader.service.UpdateInfo;
 import javafx.scene.control.Alert;
 import javafx.stage.Window;
@@ -93,5 +95,40 @@ public final class UpdateDialog {
 
         return progressStage;
     }
+
+
+    public static boolean confirmApplicationUpdate(Window owner, ReleaseInfo info) {
+
+        ButtonType viewRelease = new ButtonType(
+                "View release",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        ButtonType later = new ButtonType(
+                "Later",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        Alert dialog = new Alert(Alert.AlertType.INFORMATION);
+        dialog.initOwner(owner);
+
+        dialog.setTitle("Video Downloader Update");
+        dialog.setHeaderText("A new version of Video Downloader is available");
+
+        String description = info.description().isBlank()
+                ? ""
+                : "\n\nWhat's new:\n" + info.description();
+
+        dialog.setContentText(
+                "Installed version: " + AppVersion.CURRENT +
+                        "\nAvailable version: " + info.version() +
+                        description
+        );
+
+        dialog.getButtonTypes().setAll(viewRelease, later);
+
+        return dialog.showAndWait().orElse(later) == viewRelease;
+    }
+
 
 }
