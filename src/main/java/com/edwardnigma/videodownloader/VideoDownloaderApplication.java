@@ -30,6 +30,6 @@ public class VideoDownloaderApplication extends Application {
             }
         });
         stage.show();
-        window.checkForUpdates(false);
+        window.checkForApplicationUpdates();
     }
 }

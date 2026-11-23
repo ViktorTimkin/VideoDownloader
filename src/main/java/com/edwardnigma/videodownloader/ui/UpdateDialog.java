@@ -96,7 +96,6 @@ public final class UpdateDialog {
         return progressStage;
     }
 
-
     public static boolean confirmApplicationUpdate(Window owner, ReleaseInfo info) {
 
         ButtonType viewRelease = new ButtonType(

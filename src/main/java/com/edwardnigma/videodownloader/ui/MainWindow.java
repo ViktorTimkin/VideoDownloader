@@ -1,5 +1,7 @@
 package com.edwardnigma.videodownloader.ui;
 
+import com.edwardnigma.videodownloader.service.ApplicationUpdateService;
+import com.edwardnigma.videodownloader.service.ApplicationUpdateService.ReleaseInfo;
 import com.edwardnigma.videodownloader.service.DownloaderService;
 import com.edwardnigma.videodownloader.service.SettingsService;
 import com.edwardnigma.videodownloader.service.ToolUpdateService;
@@ -47,6 +49,7 @@ public class MainWindow {
     private final CheckBox openFolderCheckBox;
     private final VideoInfoService videoInfoService = new VideoInfoService();
     private final ToolUpdateService toolUpdateService = new ToolUpdateService();
+    private final ApplicationUpdateService applicationUpdateService = new ApplicationUpdateService();
     private final Label videoSizeLabel = new Label();
     private Task<String> sizeTask;
     private final Button updateButton = new Button("↻");
@@ -231,7 +234,7 @@ public class MainWindow {
     public void checkForUpdates(boolean manual) {
 
         if (checkingUpdates || installingUpdate || pendingUpdate != null
-                || currentTask != null) {
+                || (manual && currentTask != null)) {
             return;
         }
 
@@ -282,6 +285,52 @@ public class MainWindow {
         });
 
         Thread thread = new Thread(task, "yt-dlp-update-check");
+        thread.setDaemon(true);
+        thread.start();
+    }
+    public void checkForApplicationUpdates() {
+
+        Task<ReleaseInfo> task = new Task<>() {
+            @Override
+            protected ReleaseInfo call() throws Exception {
+                return applicationUpdateService.checkForUpdates();
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            ReleaseInfo info = task.getValue();
+
+            if (info.updateAvailable()) {
+                boolean viewRelease = UpdateDialog.confirmApplicationUpdate(
+                        root.getScene().getWindow(),
+                        info
+                );
+
+                if (viewRelease) {
+                    try {
+                        Desktop.getDesktop().browse(info.releaseUrl());
+                    } catch (IOException | UnsupportedOperationException e) {
+                        e.printStackTrace();
+
+                        UpdateDialog.showMessage(
+                                root.getScene().getWindow(),
+                                Alert.AlertType.ERROR,
+                                "Cannot open browser",
+                                "Release page: " + info.releaseUrl()
+                        );
+                    }
+                }
+            }
+
+            checkForUpdates(false);
+        });
+
+        task.setOnFailed(event -> {
+            task.getException().printStackTrace();
+            checkForUpdates(false);
+        });
+
+        Thread thread = new Thread(task, "application-update-check");
         thread.setDaemon(true);
         thread.start();
     }
