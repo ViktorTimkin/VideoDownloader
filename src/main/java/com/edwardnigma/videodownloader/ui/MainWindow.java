@@ -513,7 +513,16 @@ public class MainWindow {
             });
             currentTask.setOnFailed(e -> {
                 downloadInfoLabel.textProperty().unbind();
-                downloadInfoLabel.setText("Download error");
+
+                Throwable exception = currentTask.getException();
+                String message = exception.getMessage();
+
+                downloadInfoLabel.setText(
+                        message == null || message.isBlank()
+                                ? "Download error"
+                                : "Download error: " + message
+                );
+
                 unlockInterface();
             });
             currentTask.setOnCancelled(e -> {

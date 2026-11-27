@@ -31,6 +31,7 @@ public class DownloaderService {
                 int totalVideos = 1;
                 String fileName = "";
                 String fileSize = "";
+                String lastError = "";
                 List<String> command = buildCommand(url, savePath, qualityVideo);
                 System.out.println(command);
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -44,6 +45,9 @@ public class DownloaderService {
                     while (!isCancelled() && (line = bufferedReader.readLine()) != null) {
                         System.out.println(line);
 
+                        if (line.startsWith("ERROR:")) {
+                            lastError = line.substring("ERROR:".length()).strip();
+                        }
                         Matcher playlistMatcher = PLAYLIST_PATTERN.matcher(line);
                         Matcher fileNameMatcher = FILE_NAME_PATTERN.matcher(line);
 
@@ -101,7 +105,11 @@ public class DownloaderService {
                     System.out.println("exitCode: " + exitCode);
 
                     if (exitCode != 0 && !isCancelled()) {
-                        throw new IOException("yt-dlp exited with code: " + exitCode);
+                        throw new IOException(
+                                lastError.isBlank()
+                                ? "yt-dlp exited with code: " + exitCode
+                                : lastError
+                        );
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
